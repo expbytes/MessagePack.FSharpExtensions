@@ -55,13 +55,6 @@ let ``receive callback`` () =
 
 module Compatibility =
 
-  open MessagePack.Resolvers
-  open MessagePack.FSharp
-
-  let convert<'T, 'U> (value: 'T) =
-    let resolver = WithFSharpDefaultResolver() :> IFormatterResolver
-    MessagePackSerializer.Deserialize<'U>(MessagePackSerializer.Serialize(value, resolver), resolver)
-
   [<Union(0, typeof<CsA>)>]
   [<Union(1, typeof<CsB>)>]
   [<Union(2, typeof<CsC>)>]
@@ -91,17 +84,17 @@ module Compatibility =
   let simple () =
 
     let input = A
-    let actual = convert<SimpleUnion, CsSimpleUnion> input |> box
+    let actual = convertTo<SimpleUnion, CsSimpleUnion> input |> box
     Assert.True(actual :? CsA)
 
     let input = B 100
-    match convert<SimpleUnion, CsSimpleUnion> input |> box with
+    match convertTo<SimpleUnion, CsSimpleUnion> input |> box with
     | :? CsB as actual ->
       Assert.Equal(100, actual.Item)
     | actual -> Assert.True(false, sprintf "expected: CsB, but was: %A" actual)
 
     let input = C(99999999L, -123.43f)
-    match convert<SimpleUnion, CsSimpleUnion> input  |> box with
+    match convertTo<SimpleUnion, CsSimpleUnion> input  |> box with
     | :? CsC as actual ->
       Assert.Equal(99999999L, actual.Item1)
       Assert.Equal(-123.43f, actual.Item2)
@@ -121,7 +114,7 @@ module Compatibility =
   let ``string key`` () =
 
     let input = D 100
-    match convert<StringKeyUnion, CsStringKeyUnion> input  |> box with
+    match convertTo<StringKeyUnion, CsStringKeyUnion> input  |> box with
     | :? CsD as actual ->
       Assert.Equal(100, actual.Prop)
     | actual -> Assert.True(false, sprintf "expected: CsD, but was: %A" actual)

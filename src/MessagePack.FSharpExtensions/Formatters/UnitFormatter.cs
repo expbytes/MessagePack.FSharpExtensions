@@ -1,5 +1,8 @@
-using MessagePack.Formatters;
+// Copyright (c) All contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Microsoft.FSharp.Core;
+using MessagePack.Formatters;
 
 namespace MessagePack.FSharp.Formatters
 {
@@ -8,14 +11,15 @@ namespace MessagePack.FSharp.Formatters
 
         public UnitFormatter() { }
 
-        public int Serialize(ref byte[] bytes, int offset, Unit value, IFormatterResolver formatterResolver)
+        public void Serialize(ref MessagePackWriter writer, Unit value, MessagePackSerializerOptions options)
         {
-            return MessagePackBinary.WriteNil(ref bytes, offset);
+            writer.WriteNil();
         }
 
-        public Unit Deserialize(byte[] bytes, int offset, IFormatterResolver formatterResolver, out int readSize)
+        public Unit Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            MessagePackBinary.ReadNil(bytes, offset, out readSize);
+            reader.ReadNil();
+
             return null;
         }
     }

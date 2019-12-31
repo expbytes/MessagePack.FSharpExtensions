@@ -1,13 +1,13 @@
 # MessagePack.FSharpExtensions
-[![NuGet Status](http://img.shields.io/nuget/v/MessagePack.FSharpExtensions.svg?style=flat)](https://www.nuget.org/packages/MessagePack.FSharpExtensions/)
-[![Build status](https://ci.appveyor.com/api/projects/status/bbmylbd0o5mkrptb/branch/master?svg=true)](https://ci.appveyor.com/project/pocketberserker/messagepack-fsharpextensions/branch/master)
-[![Build Status](https://travis-ci.org/pocketberserker/MessagePack.FSharpExtensions.svg?branch=master)](https://travis-ci.org/pocketberserker/MessagePack.FSharpExtensions)
 
-MessagePack.FSharpExtensions is a [MessagePack-CSharp](https://github.com/neuecc/MessagePack-CSharp) extension library for F#.
+Forked version of  [MessagePack.FSharpExtensions](https://github.com/pocketberserker/MessagePack.FSharpExtensions) library which is a extension of [MessagePack-CSharp](https://github.com/neuecc/MessagePack-CSharp) for F#.
+
+This version brings support to MessagePack-CSharp 2.0.x version and drops support of net45 and netstandard1.6.
 
 ## Usage
 
 ```fsharp
+open System
 open MessagePack
 open MessagePack.Resolvers
 open MessagePack.FSharp
@@ -26,7 +26,7 @@ let data = Foo 999
 
 let bin = MessagePackSerializer.Serialize(data)
 
-match MessagePackSerializer.Deserialize<UnionSample>(bin) with
+match (bin |> ReadOnlyMemory<byte> |> ReadMessagePackSerializer.Deserialize<UnionSample>) with
 | Foo x ->
   printfn "%d" x
 | Bar xs ->

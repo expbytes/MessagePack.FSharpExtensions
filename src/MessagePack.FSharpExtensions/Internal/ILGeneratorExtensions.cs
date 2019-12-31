@@ -1,22 +1,5 @@
-// Copyright (c) 2017 Yoshifumi Kawai
-
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (c) All contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Linq;
@@ -25,6 +8,55 @@ using System.Reflection.Emit;
 
 namespace MessagePack.FSharp.Internal
 {
+    internal struct ArgumentField
+    {
+        private readonly int i;
+        private readonly bool @ref;
+        private readonly ILGenerator il;
+
+        public ArgumentField(ILGenerator il, int i, bool @ref = false)
+        {
+            this.il = il;
+            this.i = i;
+            this.@ref = @ref;
+        }
+
+        public ArgumentField(ILGenerator il, int i, Type type)
+        {
+            this.il = il;
+            this.i = i;
+            TypeInfo ti = type.GetTypeInfo();
+            this.@ref = (ti.IsClass || ti.IsInterface || ti.IsAbstract) ? false : true;
+        }
+
+        public void EmitLoad()
+        {
+            if (this.@ref)
+            {
+                this.il.EmitLdarga(this.i);
+            }
+            else
+            {
+                this.il.EmitLdarg(this.i);
+            }
+        }
+
+        public void EmitLdarg()
+        {
+            this.il.EmitLdarg(this.i);
+        }
+
+        public void EmitLdarga()
+        {
+            this.il.EmitLdarga(this.i);
+        }
+
+        public void EmitStore()
+        {
+            this.il.EmitStarg(this.i);
+        }
+    }
+
     /// <summary>
     /// Provides optimized generation code and helpers.
     /// </summary>
@@ -64,7 +96,7 @@ namespace MessagePack.FSharp.Internal
 
         public static void EmitLdloc(this ILGenerator il, LocalBuilder local)
         {
-            il.Emit(OpCodes.Ldloc, local);
+            EmitLdloc(il, local.LocalIndex);
         }
 
         /// <summary>
@@ -101,7 +133,7 @@ namespace MessagePack.FSharp.Internal
 
         public static void EmitStloc(this ILGenerator il, LocalBuilder local)
         {
-            il.Emit(OpCodes.Stloc, local);
+            EmitStloc(il, local.LocalIndex);
         }
 
         /// <summary>
@@ -121,7 +153,22 @@ namespace MessagePack.FSharp.Internal
 
         public static void EmitLdloca(this ILGenerator il, LocalBuilder local)
         {
-            il.Emit(OpCodes.Ldloca, local);
+            EmitLdloca(il, local.LocalIndex);
+        }
+
+        public static void EmitTrue(this ILGenerator il)
+        {
+            EmitBoolean(il, true);
+        }
+
+        public static void EmitFalse(this ILGenerator il)
+        {
+            EmitBoolean(il, false);
+        }
+
+        public static void EmitBoolean(this ILGenerator il, bool value)
+        {
+            EmitLdc_I4(il, value ? 1 : 0);
         }
 
         /// <summary>
@@ -171,6 +218,26 @@ namespace MessagePack.FSharp.Internal
                         il.Emit(OpCodes.Ldc_I4, value);
                     }
                     break;
+            }
+        }
+
+        public static void EmitUnboxOrCast(this ILGenerator il, Type type)
+        {
+            if (type.GetTypeInfo().IsValueType)
+            {
+                il.Emit(OpCodes.Unbox_Any, type);
+            }
+            else
+            {
+                il.Emit(OpCodes.Castclass, type);
+            }
+        }
+
+        public static void EmitBoxOrDoNothing(this ILGenerator il, Type type)
+        {
+            if (type.GetTypeInfo().IsValueType)
+            {
+                il.Emit(OpCodes.Box, type);
             }
         }
 
@@ -292,6 +359,11 @@ namespace MessagePack.FSharp.Internal
         {
             il.Emit(OpCodes.Ldnull);
             il.Emit(OpCodes.Ret);
+        }
+
+        public static void EmitULong(this ILGenerator il, ulong value)
+        {
+            il.Emit(OpCodes.Ldc_I8, unchecked((long)value));
         }
 
         public static void EmitThrowNotimplemented(this ILGenerator il)

@@ -1,3 +1,6 @@
+// Copyright (c) All contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -17,23 +20,24 @@ namespace MessagePack.FSharp
 
         public IMessagePackFormatter<T> GetFormatter<T>()
         {
-            return FormatterCache<T>.formatter;
+            return FormatterCache<T>.Formatter;
         }
 
-        static class FormatterCache<T>
+        private static class FormatterCache<T>
         {
-            public static readonly IMessagePackFormatter<T> formatter;
+            public static readonly IMessagePackFormatter<T> Formatter;
 
             static FormatterCache()
             {
-                formatter = (IMessagePackFormatter<T>)FSharpGetFormatterHelper.GetFormatter(typeof(T));
+                Formatter = (IMessagePackFormatter<T>)FSharpGetFormatterHelper.GetFormatter(typeof(T));
 
-                if (formatter == null)
+                if (Formatter == null)
                 {
-                    var f = DynamicUnionResolver.Instance.GetFormatter<T>();
+                    var f = DynamicDiscriminatedUnionResolver.Instance.GetFormatter<T>();
+
                     if (f != null)
                     {
-                        formatter = f;
+                        Formatter = f;
                     }
                 }
             }
@@ -64,6 +68,7 @@ namespace MessagePack.FSharp
                 var genericType = ti.GetGenericTypeDefinition();
 
                 Type formatterType;
+                
                 if (formatterMap.TryGetValue(genericType, out formatterType))
                 {
                     return CreateInstance(formatterType, ti.GenericTypeArguments);

@@ -1,17 +1,35 @@
 [<AutoOpen>]
 module MessagePack.Tests.Helper
 
+open System
 open MessagePack
-open MessagePack.Resolvers
 open MessagePack.FSharp
+open MessagePack.Resolvers
 
-type WithFSharpDefaultResolver() =
-  interface IFormatterResolver with
-    member __.GetFormatter<'T>() =
-      match FSharpResolver.Instance.GetFormatter<'T>() with
-      | null -> StandardResolver.Instance.GetFormatter<'T>()
-      | x -> x
+let setupMessagePackSerializer =
+  let resolvers : IFormatterResolver[] = [| 
+      FSharpResolver.Instance; 
+      StandardResolver.Instance;
+    |]
 
-let convert<'T> (value: 'T) =
-  let resolver = WithFSharpDefaultResolver() :> IFormatterResolver
-  MessagePackSerializer.Deserialize<'T>(MessagePackSerializer.Serialize(value, resolver), resolver)
+  let compositeResolver = CompositeResolver.Create resolvers
+  let options = MessagePackSerializerOptions.Standard.WithResolver(compositeResolver)
+
+  MessagePackSerializer.DefaultOptions <- options
+
+let convert<'T> (value: 'T) =  
+  setupMessagePackSerializer
+
+  value
+    |> MessagePackSerializer.Serialize
+    |> ReadOnlyMemory<byte>
+    |> MessagePackSerializer.Deserialize<'T>
+
+let convertTo<'T, 'U> (value: 'T) =
+  setupMessagePackSerializer
+
+  value
+    |> MessagePackSerializer.Serialize
+    |> ReadOnlyMemory<byte>
+    |> MessagePackSerializer.Deserialize<'U>
+

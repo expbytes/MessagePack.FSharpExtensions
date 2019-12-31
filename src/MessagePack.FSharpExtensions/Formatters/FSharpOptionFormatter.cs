@@ -1,33 +1,33 @@
-using MessagePack.Formatters;
+// Copyright (c) All contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Microsoft.FSharp.Core;
+using MessagePack.Formatters;
 
 namespace MessagePack.FSharp.Formatters
 {
     public sealed class FSharpOptionFormatter<T> : IMessagePackFormatter<FSharpOption<T>>
     {
-        public int Serialize(ref byte[] bytes, int offset, FSharpOption<T> value, IFormatterResolver formatterResolver)
+        public void Serialize(ref MessagePackWriter writer, FSharpOption<T> value, MessagePackSerializerOptions options)
         {
-            if (FSharpOption<T>.get_IsNone(value))
+            if (FSharpOption<T>.get_IsNone(value)) 
             {
-                return MessagePackBinary.WriteNil(ref bytes, offset);
+                writer.WriteNil();
             }
             else
             {
-                return formatterResolver.GetFormatterWithVerify<T>().Serialize(ref bytes, offset, value.Value, formatterResolver);
+                options.Resolver.GetFormatterWithVerify<T>().Serialize(ref writer, value.Value, options);
             }
         }
 
-        public FSharpOption<T> Deserialize(byte[] bytes, int offset, IFormatterResolver formatterResolver, out int readSize)
+        public FSharpOption<T> Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            if (MessagePackBinary.IsNil(bytes, offset))
+            if (reader.TryReadNil()) 
             {
-                readSize = 1;
                 return null;
             }
-            else
-            {
-                return FSharpOption<T>.Some(formatterResolver.GetFormatterWithVerify<T>().Deserialize(bytes, offset, formatterResolver, out readSize));
-            }
+
+            return FSharpOption<T>.Some(options.Resolver.GetFormatterWithVerify<T>().Deserialize(ref reader, options));
         }
     }
 
@@ -40,29 +40,26 @@ namespace MessagePack.FSharp.Formatters
             this.underlyingFormatter = underlyingFormatter;
         }
 
-        public int Serialize(ref byte[] bytes, int offset, FSharpOption<T> value, IFormatterResolver formatterResolver)
+        public void Serialize(ref MessagePackWriter writer, FSharpOption<T> value, MessagePackSerializerOptions options)
         {
             if (FSharpOption<T>.get_IsNone(value))
             {
-                return MessagePackBinary.WriteNil(ref bytes, offset);
+                writer.WriteNil();
             }
             else
             {
-                return underlyingFormatter.Serialize(ref bytes, offset, value.Value, formatterResolver);
+                underlyingFormatter.Serialize(ref writer, value.Value, options);
             }
         }
 
-        public FSharpOption<T> Deserialize(byte[] bytes, int offset, IFormatterResolver formatterResolver, out int readSize)
+        public FSharpOption<T> Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            if (MessagePackBinary.IsNil(bytes, offset))
+            if (reader.TryReadNil()) 
             {
-                readSize = 1;
                 return null;
             }
-            else
-            {
-                return FSharpOption<T>.Some(underlyingFormatter.Deserialize(bytes, offset, formatterResolver, out readSize));
-            }
+
+            return FSharpOption<T>.Some(underlyingFormatter.Deserialize(ref reader, options));
         }
     }
 }

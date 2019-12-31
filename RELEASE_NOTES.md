@@ -1,3 +1,8 @@
+### 2.0.0 - December 27 2019
+* Update dependencies(FSharp.Core 4.7.0, MessagePack 2.0.323)
+* drop net45
+* drop netstandard1.6
+
 ### 1.4.1 - January 9 2019
 * Fix signalr interop #2
 * re-support netstandard1.6

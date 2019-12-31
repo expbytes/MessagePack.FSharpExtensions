@@ -57,13 +57,6 @@ let ``receive callback struct union`` () =
 
 module Compatibility =
 
-  open MessagePack.Resolvers
-  open MessagePack.FSharp
-
-  let convert<'T, 'U> (value: 'T) =
-    let resolver = WithFSharpDefaultResolver() :> IFormatterResolver
-    MessagePackSerializer.Deserialize<'U>(MessagePackSerializer.Serialize(value, resolver), resolver)
-
   [<Union(0, typeof<CsE>)>]
   [<Union(1, typeof<CsF>)>]
   [<Union(2, typeof<CsG>)>]
@@ -93,17 +86,17 @@ module Compatibility =
   let ``struct `` () =
 
     let input = E
-    let actual = convert<StructUnion, CsStructUnion> input |> box
+    let actual = convertTo<StructUnion, CsStructUnion> input |> box
     Assert.True(actual :? CsE)
 
     let input = F 100
-    match convert<StructUnion, CsStructUnion> input |> box with
+    match convertTo<StructUnion, CsStructUnion> input |> box with
     | :? CsF as actual ->
       Assert.Equal(100, actual.Item)
     | actual -> Assert.True(false, sprintf "expected: CsF, but was: %A" actual)
 
     let input = G(99999999L, -123.43f)
-    match convert<StructUnion, CsStructUnion> input |> box with
+    match convertTo<StructUnion, CsStructUnion> input |> box with
     | :? CsG as actual ->
       Assert.Equal(99999999L, actual.Item1)
       Assert.Equal(-123.43f, actual.Item2)
@@ -129,13 +122,13 @@ module Compatibility =
   let ``builtin(string key)`` () =
 
     let input: Result<int, string> = Ok 1
-    match convert<Result<int, string>, CsResult<int, string>> input |> box with
+    match convertTo<Result<int, string>, CsResult<int, string>> input |> box with
     | :? CsOk as actual ->
       Assert.Equal(1, actual.ResultValue)
     | actual -> Assert.True(false, sprintf "expected: CsOk, but was: %A" actual)
 
     let input: Result<int, string> = Error "error"
-    match convert<Result<int, string>, CsResult<int, string>> input |> box with
+    match convertTo<Result<int, string>, CsResult<int, string>> input |> box with
     | :? CsError as actual ->
       Assert.Equal("error", actual.ErrorValue)
     | actual -> Assert.True(false, sprintf "expected: CsError, but was: %A" actual)
